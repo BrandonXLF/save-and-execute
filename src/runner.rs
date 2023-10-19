@@ -7,22 +7,22 @@ use std::os::windows::process::CommandExt;
 type Action = fn(&mut Runner, &str) -> Result<(), String>;
 
 pub struct Runner {
-    actions: HashMap<String, Action>,
-    aliases: HashMap<String, String>,
+    actions: HashMap<&'static str, Action>,
+    aliases: HashMap<&'static str, &'static str>,
     store: Store,
     commands: Vec<CommandInfo>
 }
 
 impl Runner {
     pub fn new() -> Self {
-        let actions: HashMap<String, Action> = HashMap::from([
-            ("add".into(), |runner: &mut Self, _: &str| -> Result<(), String> {
+        let actions: HashMap<&str, Action> = HashMap::from([
+            ("add", |runner: &mut Self, _: &str| -> Result<(), String> {
                 runner.commands.push(runner.create_cmd(None)?);
                 runner.save_commands()?;
         
                 return Err("Command created successfully.".into());
             } as Action),
-            ("del".into(), |runner: &mut Self, identifier: &str| -> Result<(), String> {
+            ("del", |runner: &mut Self, identifier: &str| -> Result<(), String> {
                 println!();
 
                 let index = runner.get_command_index(identifier)?;
@@ -41,7 +41,7 @@ impl Runner {
         
                 return Err("Command delete successfully.".into());
             } as Action),
-            ("edit".into(), |runner: &mut Self, identifier: &str| -> Result<(), String> {
+            ("edit", |runner: &mut Self, identifier: &str| -> Result<(), String> {
                 let index: usize = runner.get_command_index(identifier)?;
             
                 runner.commands[index] = runner.create_cmd(Some(&runner.commands[index]))?;
@@ -49,7 +49,7 @@ impl Runner {
         
                 return Err("Command edited successfully.".into());
             } as Action),
-            ("move".into(), |runner: &mut Self, identifier: &str| -> Result<(), String> {
+            ("move", |runner: &mut Self, identifier: &str| -> Result<(), String> {
                 println!();
 
                 let index = runner.get_command_index(identifier)?;
@@ -71,7 +71,7 @@ impl Runner {
     
                 return Err("Command moved successfully.".into());
             } as Action), 
-            ("run".into(), |runner: &mut Self, identifier: &str| -> Result<(), String> {
+            ("run", |runner: &mut Self, identifier: &str| -> Result<(), String> {
                 let cmd_info = &runner.commands[runner.get_command_index(identifier)?];
                 
                 screen::clear();
@@ -91,7 +91,7 @@ impl Runner {
             } as Action)
         ]);
     
-        let aliases: HashMap<String, String> = HashMap::from([
+        let aliases: HashMap<&str, &str> = HashMap::from([
             ("a".into(), "add".into()),
             ("d".into(), "del".into()),
             ("e".into(), "edit".into()),
@@ -181,7 +181,7 @@ impl Runner {
             return self.select_ui(None);
         }
     
-        if self.actions.contains_key(&args[0]) || self.aliases.contains_key(&args[0]) {
+        if self.actions.contains_key(&args[0] as &str) || self.aliases.contains_key(&args[0] as &str) {
             return self.exec(&args[0], "")
         }
     
