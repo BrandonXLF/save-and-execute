@@ -1,5 +1,5 @@
-use std::{collections::HashMap, process::Command};
-use dialoguer::Input;
+use std::{collections::HashMap, process::Command, cell::RefCell};
+use rustyline::{DefaultEditor, config::Configurer, ColorMode};
 use crate::{arg_parser, store::{Store, CommandInfo}, screen};
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
@@ -10,7 +10,8 @@ pub struct Runner {
     actions: HashMap<&'static str, Action>,
     aliases: HashMap<&'static str, &'static str>,
     store: Store,
-    commands: Vec<CommandInfo>
+    commands: Vec<CommandInfo>,
+    editor: RefCell<DefaultEditor>,
 }
 
 impl Runner {
@@ -31,10 +32,9 @@ impl Runner {
                 let index = runner.get_command_index(identifier, ui)?;
 
                 println!();
-                let confirm = Input::<String>::new()
-                    .with_prompt(format!("Are you sure you want to delete command #{}? (Y/N)", index + 1).as_str())
-                    .interact_text()
-                    .unwrap();
+                let confirm = runner.prompt(
+                    format!("Are you sure you want to delete command #{}? (Y/N) ", index + 1).as_str()
+                ).to_lowercase();
         
                 if confirm != "y" && confirm != "yes" {
                     return Err("Deletion aborted.".into());
@@ -61,11 +61,8 @@ impl Runner {
                 let index = runner.get_command_index(identifier, ui)?;
 
                 println!();
-                let pos_line = Input::<String>::new()
-                    .with_prompt("Enter new position")
-                    .interact_text()
-                    .unwrap();
-    
+                let pos_line = runner.prompt("New position: ");
+
                 let mut new_index = pos_line.parse::<usize>().map_err(|_| "Invalid number.")? - 1;
     
                 if new_index > runner.commands.len() {
@@ -130,23 +127,36 @@ impl Runner {
         let store = Store::new();
         let commands = store.get_commands();
 
-        Self { actions, aliases, store, commands }
+        let mut config_builder = rustyline::Config::builder();
+        // Line wrapping does not add line feed on Windows when color mode is enabled
+        config_builder.set_color_mode(ColorMode::Disabled);
+
+        let editor = DefaultEditor::with_config(config_builder.build()).unwrap();
+
+        Self { actions, aliases, store, commands, editor: RefCell::new(editor) }
+    }
+
+    fn prompt(&self, prompt: &str) -> String {
+        let mut editor = self.editor.borrow_mut();
+        let input = editor.readline(prompt).unwrap();
+        let _ = editor.add_history_entry(&input);
+
+        return input;
+    }
+
+    fn prompt_with_initial(&self, prompt: &str, initial: &str) -> String {
+        let mut editor = self.editor.borrow_mut();
+        let input = self.editor.borrow_mut().readline_with_initial(prompt, (initial, "")).unwrap();
+        let _ = editor.add_history_entry(&input);
+
+        return input;
     }
 
     fn create_cmd(&self, base: &CommandInfo, name_reserved: bool) -> Result<CommandInfo, String> {
         println!();
 
-        let name = Input::<String>::new()
-            .with_prompt("Name")
-            .with_initial_text(&base.name)
-            .interact_text()
-            .unwrap();
-    
-        let cmd = Input::<String>::new()
-            .with_prompt("Command")
-            .with_initial_text(&base.cmd)
-            .interact_text()
-            .unwrap();
+        let name = self.prompt_with_initial("Name: ", &base.name);
+        let cmd = self.prompt_with_initial("Command: ", &base.cmd);
 
         if (!name_reserved || base.name.is_empty() || base.name != name) &&
             self.commands.iter().any(|command| command.name == name)
@@ -241,11 +251,8 @@ impl Runner {
 
         loop {
             println!();
-            let line = Input::<String>::new()
-                .with_prompt("se")
-                .interact_text()
-                .unwrap();
 
+            let line = self.prompt("se > ");
             let args = &arg_parser::string_to_arguments(line.trim());
 
             if args.len() > 0 && args[0] == "exit" {
