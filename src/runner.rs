@@ -20,7 +20,9 @@ impl Runner {
                 runner.commands.push(runner.create_cmd(None)?);
                 runner.save_commands()?;
         
-                return Err("Command created successfully.".into());
+                println!("\nCommand created successfully.");
+
+                return Ok(());
             } as Action),
             ("del", |runner: &mut Self, identifier: &str| -> Result<(), String> {
                 println!();
@@ -39,7 +41,9 @@ impl Runner {
                 runner.commands.remove(index);
                 runner.save_commands()?;
         
-                return Err("Command delete successfully.".into());
+                println!("\nCommand deleted successfully.");
+
+                return Ok(());
             } as Action),
             ("edit", |runner: &mut Self, identifier: &str| -> Result<(), String> {
                 let index: usize = runner.get_command_index(identifier)?;
@@ -47,7 +51,9 @@ impl Runner {
                 runner.commands[index] = runner.create_cmd(Some(&runner.commands[index]))?;
                 runner.save_commands()?;
         
-                return Err("Command edited successfully.".into());
+                println!("\nCommand edited successfully.");
+
+                return Ok(());
             } as Action),
             ("move", |runner: &mut Self, identifier: &str| -> Result<(), String> {
                 println!();
@@ -69,13 +75,14 @@ impl Runner {
                 runner.commands.insert(new_index, cmd);
                 runner.save_commands()?;
     
-                return Err("Command moved successfully.".into());
+                println!("\nCommand moved successfully.");
+
+                return Ok(());
             } as Action), 
             ("run", |runner: &mut Self, identifier: &str| -> Result<(), String> {
                 let cmd_info = &runner.commands[runner.get_command_index(identifier)?];
                 
-                screen::clear();
-                println!("Running command {}.\n", cmd_info.cmd);
+                println!("\nRunning command: {}\n", cmd_info.cmd);
 
                 #[cfg(target_os = "windows")]
                 let status = Command::new("cmd").arg("/c").raw_arg(&cmd_info.cmd).status().map_err(|_| "Failed to run cmd.")?;
@@ -88,15 +95,46 @@ impl Runner {
                 );
 
                 return Ok(());
-            } as Action)
+            } as Action),
+            ("help", |_: &mut Self, _: &str| -> Result<(), String> {
+                println!("\nusage: se <action> <identifier>
+
+<action> is one of:
+    -a, add    Add a new command. <identifier> is ignored.
+    -d, del    Delete the specified command.
+    -e, edit   Edit the specified command.
+    -h, help   Show this help message. <identifier> is ignored.
+    -l, list   Show the command list. This is the default action when no <identifier> is given. <identifier> is ignored.
+    -m, move   Move the specified command to a new position on the command list.
+    -r, run    Run the specified command. This is the default action when a <identifier> is given.
+
+<identifier> is either the name of the command or the index of the command on the command list.");
+
+                return Ok(());
+            } as Action),
+            ("list", |runner: &mut Self, _: &str| -> Result<(), String> {
+                println!();
+
+                for (i, cmd_info) in runner.commands.iter().enumerate() {
+                    println!("{}. {}", i + 1, arg_parser::escape_string(&cmd_info.name));
+                }
+        
+                if runner.commands.len() == 0 {
+                    println!("No commands saved. Run \"se -a\" to get started.");
+                }
+
+                return Ok(());
+            } as Action),
         ]);
     
         let aliases: HashMap<&str, &str> = HashMap::from([
-            ("a".into(), "add".into()),
-            ("d".into(), "del".into()),
-            ("e".into(), "edit".into()),
-            ("m".into(), "move".into()),
-            ("r".into(), "run".into())
+            ("-a", "add"),
+            ("-d", "del"),
+            ("-e", "edit"),
+            ("-m", "move"),
+            ("-r", "run"),
+            ("-h", "help"),
+            ("-l", "list"),
         ]);
 
         let store = Store::new();
@@ -154,74 +192,76 @@ impl Runner {
         Ok(index)
     }
 
-    fn exec(&mut self, action: &str, identifier: &str) -> Result<(), String> {
+    fn get_action(&mut self, action: &str) -> Option<&Action> {
         let resolved_action = match self.aliases.get(action) {
             Some(target_action) => target_action,
             _ => action
         };
 
-        let func = self.actions.get(resolved_action)
-            .ok_or(format!("Unknown action \"{}\".", action))?;
-
-        func(self, identifier)
+        return self.actions.get(resolved_action);
     }
-    
-    pub fn exec_from_args(&mut self, args: &Vec<String>) -> Result<(), String>  {
+
+    fn exec_from_args(&mut self, args: &Vec<String>) -> Result<(), String> {
         let arg_count = args.len();
-    
+
         if arg_count > 2 {
             return Err("Too many arguments.".into());
         }
-    
-        if arg_count == 2 {
-            return self.exec(&args[0], &args[1])
-        }
-    
+
         if arg_count == 0 || args[0].is_empty() {
-            return self.select_ui(None);
+            return Err("No action or identifier given!".into());
         }
-    
-        if self.actions.contains_key(&args[0] as &str) || self.aliases.contains_key(&args[0] as &str) {
-            return self.exec(&args[0], "")
+
+        let mut action: Option<&Action> = self.get_action(&args[0]);
+        let identifier: &str;
+
+        if arg_count == 2 && action.is_none() {
+            return Err(format!("Unknown action \"{}\".", &args[0]));
         }
-    
-        self.exec("run", &args[0])
+
+        if arg_count == 2 {
+            identifier = &args[1];
+        } else if action.is_none() {
+            action = self.get_action("run");
+            identifier = &args[0];
+        } else {
+            identifier = "";
+        }
+
+        return action.unwrap()(self, identifier);
     }
 
-    pub fn show_error(&mut self, error: Option<String>) {
-        if let Some(error) = error {
-            println!("\n{}", error);
+    fn process_args(&mut self, args: &Vec<String>) {
+        let res = self.exec_from_args(args);
+
+        if let Err(error) = res {
+            println!("\nError: {}", error);
         }
     }
 
-    pub fn cmd_ui(&mut self, args: &Vec<String>)  {
+    pub fn run_args(&mut self, args: &Vec<String>) {
         screen::title();
 
-        let res = self.exec_from_args(args).err();
-        self.show_error(res);
+        self.process_args(args);
     }
-    
-    pub fn select_ui(&mut self, prev_error: Option<String>) -> Result<(), String> {
+
+    pub fn show_runner(&mut self) {
         screen::title();
-        println!();
-    
-        for (i, cmd_info) in self.commands.iter().enumerate() {
-            println!("{}. {}", i + 1, arg_parser::escape_string(&cmd_info.name));
-        }
 
-        if self.commands.len() == 0 {
-            println!("No commands saved. Run \"add\" to get started.");
-        }
+        loop {
+            println!();
+            let line = Input::<String>::new()
+                .with_prompt("se")
+                .interact_text()
+                .unwrap();
 
-        self.show_error(prev_error);
-    
-        println!("\n<a[dd]|d[el]|e[dit]|m[ove]|r[un]|> <number or name>\n");
-    
-        let line = Input::<String>::new()
-            .with_prompt("Action and identifier")
-            .interact_text()
-            .unwrap();
-    
-        self.exec_from_args(&arg_parser::string_to_arguments(line.trim()))
+            let args = &arg_parser::string_to_arguments(line.trim());
+
+            if args.len() > 0 && args[0] == "exit" {
+                break;
+            }
+
+            self.process_args(&arg_parser::string_to_arguments(line.trim()));
+        }
     }
 }
