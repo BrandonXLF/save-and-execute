@@ -4,7 +4,7 @@ use crate::{arg_parser, store::{Store, CommandInfo}, screen};
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
 
-type Action = fn(&mut Runner, &str) -> Result<(), String>;
+type Action = fn(&mut Runner, &str, bool) -> Result<(), String>;
 
 pub struct Runner {
     actions: HashMap<&'static str, Action>,
@@ -16,7 +16,7 @@ pub struct Runner {
 impl Runner {
     pub fn new() -> Self {
         let actions: HashMap<&str, Action> = HashMap::from([
-            ("add", |runner: &mut Self, name: &str| -> Result<(), String> {
+            ("add", |runner, name, _| -> Result<(), String> {
                 runner.commands.push(runner.create_cmd(
                     &CommandInfo { name: name.to_owned(), cmd: "".to_owned() },
                     false
@@ -27,8 +27,8 @@ impl Runner {
 
                 return Ok(());
             } as Action),
-            ("del", |runner: &mut Self, identifier: &str| -> Result<(), String> {
-                let index = runner.get_command_index(identifier)?;
+            ("del", |runner, identifier, ui| -> Result<(), String> {
+                let index = runner.get_command_index(identifier, ui)?;
 
                 println!();
                 let confirm = Input::<String>::new()
@@ -47,8 +47,8 @@ impl Runner {
 
                 return Ok(());
             } as Action),
-            ("edit", |runner: &mut Self, identifier: &str| -> Result<(), String> {
-                let index: usize = runner.get_command_index(identifier)?;
+            ("edit", |runner, identifier, ui| -> Result<(), String> {
+                let index: usize = runner.get_command_index(identifier, ui)?;
             
                 runner.commands[index] = runner.create_cmd(&runner.commands[index], true)?;
                 runner.save_commands()?;
@@ -57,8 +57,8 @@ impl Runner {
 
                 return Ok(());
             } as Action),
-            ("move", |runner: &mut Self, identifier: &str| -> Result<(), String> {
-                let index = runner.get_command_index(identifier)?;
+            ("move", |runner, identifier, ui| -> Result<(), String> {
+                let index = runner.get_command_index(identifier, ui)?;
 
                 println!();
                 let pos_line = Input::<String>::new()
@@ -80,8 +80,8 @@ impl Runner {
 
                 return Ok(());
             } as Action), 
-            ("run", |runner: &mut Self, identifier: &str| -> Result<(), String> {
-                let cmd_info = &runner.commands[runner.get_command_index(identifier)?];
+            ("run", |runner, identifier, ui| -> Result<(), String> {
+                let cmd_info = &runner.commands[runner.get_command_index(identifier, ui)?];
                 
                 println!("\nRunning command: {}\n", cmd_info.cmd);
 
@@ -97,12 +97,12 @@ impl Runner {
 
                 return Ok(());
             } as Action),
-            ("help", |_: &mut Self, _: &str| -> Result<(), String> {
-                screen::show_help();
+            ("help", |_, _, ui: bool| -> Result<(), String> {
+                screen::show_help(ui);
                 
                 return Ok(());
             } as Action),
-            ("list", |runner: &mut Self, _: &str| -> Result<(), String> {
+            ("list", |runner, _, _| -> Result<(), String> {
                 println!();
 
                 for (i, cmd_info) in runner.commands.iter().enumerate() {
@@ -161,22 +161,23 @@ impl Runner {
         self.store.save_commands(&self.commands)
     }
 
-    fn get_command_index(&self, line: &str) -> Result<usize, String>  {
+    fn get_command_index(&self, line: &str, ui: bool) -> Result<usize, String>  {
         if line.len() == 0 {
             return Err("No command specified for action.".into());
         }
     
+        let help_cmd = if ui { "help" } else { "se help" };
         let maybe_number: Option<usize> = line.parse::<usize>().ok();
 
         let index = if let Some(number) = maybe_number {
             number - 1
         } else {
             self.commands.iter().position(|command| command.name == line)
-                .ok_or(format!("Command with name \"{}\" not found.", line))?
+                .ok_or(format!("Command with name \"{}\" not found. Run \"{}\" for help.", line, help_cmd))?
         };
     
         if index >= self.commands.len() {
-            return Err(format!("Command #{} does not exist.", line));
+            return Err(format!("Command #{} does not exist. Run \"{}\" for help.", line, help_cmd));
         }
     
         Ok(index)
@@ -191,7 +192,7 @@ impl Runner {
         return self.actions.get(resolved_action);
     }
 
-    fn exec_from_args(&mut self, args: &Vec<String>) -> Result<(), String> {
+    fn exec_from_args(&mut self, args: &Vec<String>, ui: bool) -> Result<(), String> {
         let arg_count = args.len();
 
         if arg_count > 2 {
@@ -218,11 +219,11 @@ impl Runner {
             identifier = "";
         }
 
-        return action.unwrap()(self, identifier);
+        return action.unwrap()(self, identifier, ui);
     }
 
-    fn process_args(&mut self, args: &Vec<String>) {
-        let res = self.exec_from_args(args);
+    fn process_args(&mut self, args: &Vec<String>, ui: bool) {
+        let res = self.exec_from_args(args, ui);
 
         if let Err(error) = res {
             println!("\nError: {}", error);
@@ -232,7 +233,7 @@ impl Runner {
     pub fn run_args(&mut self, args: &Vec<String>) {
         screen::title();
 
-        self.process_args(args);
+        self.process_args(args, false);
     }
 
     pub fn show_runner(&mut self) {
@@ -251,7 +252,7 @@ impl Runner {
                 break;
             }
 
-            self.process_args(&arg_parser::string_to_arguments(line.trim()));
+            self.process_args(&arg_parser::string_to_arguments(line.trim()), true);
         }
     }
 }

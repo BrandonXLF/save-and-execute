@@ -2,9 +2,16 @@ pub fn title() {
     println!("Save & Execute v{} (c) Brandon Fowler", env!("CARGO_PKG_VERSION"));
 }
 
-pub fn show_help() {
-    println!("\nusage: se <action> <identifier>
+pub fn show_help(ui: bool) {
+    println!();
 
+    if ui {
+        println!("usage: <action> <identifier>");
+    } else {
+        println!("usage: se <action> <identifier>");
+    }
+
+    println!("
 <action> is one of:
     -a, add    Add a new command using the given <identifier> as the initial name.
     -d, del    Delete the specified command.
@@ -12,7 +19,12 @@ pub fn show_help() {
     -h, help   Show this help message. <identifier> is ignored.
     -l, list   Show the command list. This is the default action when no <identifier> is given. <identifier> is ignored.
     -m, move   Move the specified command to a new position on the command list.
-    -r, run    Run the specified command. This is the default action when a <identifier> is given.
+    -r, run    Run the specified command. This is the default action when a <identifier> is given.");
 
+    if ui {
+        println!("        exit   Exit this command line.")
+    }
+
+    println!("
 <identifier> is either the name of the command or the index of the command on the command list.");
 }
