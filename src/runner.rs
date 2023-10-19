@@ -25,10 +25,9 @@ impl Runner {
                 return Ok(());
             } as Action),
             ("del", |runner: &mut Self, identifier: &str| -> Result<(), String> {
-                println!();
-
                 let index = runner.get_command_index(identifier)?;
-        
+
+                println!();
                 let confirm = Input::<String>::new()
                     .with_prompt(format!("Are you sure you want to delete command #{}? (Y/N)", index + 1).as_str())
                     .interact_text()
@@ -56,10 +55,9 @@ impl Runner {
                 return Ok(());
             } as Action),
             ("move", |runner: &mut Self, identifier: &str| -> Result<(), String> {
-                println!();
-
                 let index = runner.get_command_index(identifier)?;
-            
+
+                println!();
                 let pos_line = Input::<String>::new()
                     .with_prompt("Enter new position")
                     .interact_text()
