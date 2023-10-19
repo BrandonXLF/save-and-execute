@@ -8,11 +8,11 @@ pub struct CommandInfo {
     pub cmd: String
 }
 
-pub struct  CommandStore {
+pub struct Store {
     store_path: Option<PathBuf>
 }
 
-impl CommandStore {
+impl Store {
     fn get_file_path() -> Option<PathBuf> {
         return Some(PathBuf::from_iter([dirs::home_dir()?.to_str()?, "se-commands.json"]));
     }

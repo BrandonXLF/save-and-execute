@@ -1,6 +1,6 @@
 use std::{collections::HashMap, process::Command};
 use dialoguer::Input;
-use crate::{arg_parser, command_store::{CommandStore, CommandInfo}, screen};
+use crate::{arg_parser, store::{Store, CommandInfo}, screen};
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
 
@@ -9,7 +9,7 @@ type Action = fn(&mut Runner, &str) -> Result<(), String>;
 pub struct Runner {
     actions: HashMap<String, Action>,
     aliases: HashMap<String, String>,
-    store: CommandStore,
+    store: Store,
     commands: Vec<CommandInfo>
 }
 
@@ -99,7 +99,7 @@ impl Runner {
             ("r".into(), "run".into())
         ]);
 
-        let store = CommandStore::new();
+        let store = Store::new();
         let commands = store.get_commands();
 
         Self { actions, aliases, store, commands }

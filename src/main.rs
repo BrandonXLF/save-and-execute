@@ -1,6 +1,6 @@
 mod arg_parser;
 mod runner;
-mod command_store;
+mod store;
 mod screen;
 use std::env;
 use runner::Runner;
