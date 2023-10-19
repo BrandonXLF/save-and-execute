@@ -16,8 +16,11 @@ pub struct Runner {
 impl Runner {
     pub fn new() -> Self {
         let actions: HashMap<&str, Action> = HashMap::from([
-            ("add", |runner: &mut Self, _: &str| -> Result<(), String> {
-                runner.commands.push(runner.create_cmd(None)?);
+            ("add", |runner: &mut Self, name: &str| -> Result<(), String> {
+                runner.commands.push(runner.create_cmd(
+                    &CommandInfo { name: name.to_owned(), cmd: "".to_owned() },
+                    false
+                )?);
                 runner.save_commands()?;
         
                 println!("\nCommand created successfully.");
@@ -47,7 +50,7 @@ impl Runner {
             ("edit", |runner: &mut Self, identifier: &str| -> Result<(), String> {
                 let index: usize = runner.get_command_index(identifier)?;
             
-                runner.commands[index] = runner.create_cmd(Some(&runner.commands[index]))?;
+                runner.commands[index] = runner.create_cmd(&runner.commands[index], true)?;
                 runner.save_commands()?;
         
                 println!("\nCommand edited successfully.");
@@ -98,7 +101,7 @@ impl Runner {
                 println!("\nusage: se <action> <identifier>
 
 <action> is one of:
-    -a, add    Add a new command. <identifier> is ignored.
+    -a, add    Add a new command using the given <identifier> as the initial name.
     -d, del    Delete the specified command.
     -e, edit   Edit the specified command.
     -h, help   Show this help message. <identifier> is ignored.
@@ -141,22 +144,22 @@ impl Runner {
         Self { actions, aliases, store, commands }
     }
 
-    fn create_cmd(&self, base: Option<&CommandInfo>) -> Result<CommandInfo, String> {
+    fn create_cmd(&self, base: &CommandInfo, name_reserved: bool) -> Result<CommandInfo, String> {
         println!();
 
         let name = Input::<String>::new()
             .with_prompt("Name")
-            .with_initial_text(base.map(|base| base.name.as_str()).unwrap_or_default())
+            .with_initial_text(&base.name)
             .interact_text()
             .unwrap();
     
         let cmd = Input::<String>::new()
             .with_prompt("Command")
-            .with_initial_text(base.map(|base| base.cmd.as_str()).unwrap_or_default())
+            .with_initial_text(&base.cmd)
             .interact_text()
             .unwrap();
 
-        if (base.is_none() || base.unwrap().name != name) &&
+        if (!name_reserved || base.name.is_empty() || base.name != name) &&
             self.commands.iter().any(|command| command.name == name)
         {
             return Err(format!("Command with name \"{}\" already exists.", name));
