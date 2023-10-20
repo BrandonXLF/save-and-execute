@@ -128,6 +128,7 @@ impl Runner {
         let commands = store.get_commands();
 
         let mut config_builder = rustyline::Config::builder();
+        // Workaround for https://github.com/kkawakam/rustyline/issues/738
         // Line wrapping does not add line feed on Windows when color mode is enabled
         config_builder.set_color_mode(ColorMode::Disabled);
 
