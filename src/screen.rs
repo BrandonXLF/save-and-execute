@@ -1,5 +1,5 @@
 pub fn title() {
-    println!("Save & Execute v{} (c) Brandon Fowler", env!("CARGO_PKG_VERSION"));
+    println!("Save and Execute v{} (c) Brandon Fowler", env!("CARGO_PKG_VERSION"));
 }
 
 pub fn show_help(ui: bool) {
