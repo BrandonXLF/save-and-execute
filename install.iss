@@ -1,4 +1,4 @@
-﻿[Setup]
+[Setup]
 AppName = se – Save and Execute
 AppVersion = 0.2.0
 DefaultDirName = {autopf}\se
@@ -63,10 +63,9 @@ Type: dirifempty; Name: {localappdata}\Microsoft\Windows Terminal\Fragments\se
 [Code]
 function PathNeeded(UseSystem: Boolean; Key: String): Boolean;
 	var
-		Root: integer;
+	Root: Integer;
 		Path: String;
 	begin
-	
     if UseSystem then begin
 		Root := HKEY_LOCAL_MACHINE;
     end else begin
@@ -83,9 +82,8 @@ end;
 
 procedure RemovePath(UseSystem: Boolean; Key: String);
 var
-    Root: Integer;
+    Root, Match: Integer;
 	Path: String;
-    Match: Integer;
 begin
     if UseSystem then begin
 		Root := HKEY_LOCAL_MACHINE;
