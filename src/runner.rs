@@ -94,12 +94,12 @@ impl Runner {
 
                 return Ok(());
             } as Action),
-            ("help", |_, _, ui: bool| -> Result<(), String> {
+            ("help", |_, _, ui| -> Result<(), String> {
                 screen::show_help(ui);
                 
                 return Ok(());
             } as Action),
-            ("list", |runner, _, _| -> Result<(), String> {
+            ("list", |runner, _, ui| -> Result<(), String> {
                 println!();
 
                 for (i, cmd_info) in runner.commands.iter().enumerate() {
@@ -107,7 +107,9 @@ impl Runner {
                 }
         
                 if runner.commands.len() == 0 {
-                    println!("No commands saved. Run \"se -a\" to get started.");
+                    let add_cmd = if ui { "add" } else { "se add" };
+
+                    println!("No commands saved. Run \"{}\" to get started.", add_cmd);
                 }
 
                 return Ok(());
