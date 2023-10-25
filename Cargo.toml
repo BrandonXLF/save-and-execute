@@ -8,7 +8,6 @@ name = "se"
 path = "src/main.rs"
 
 [dependencies]
-console = "0.15.7"
 dirs = "5.0.1"
 rustyline = "12.0.0"
 serde = { version = "1.0.183", features = ["derive"] }
