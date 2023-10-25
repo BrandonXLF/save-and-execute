@@ -1,4 +1,4 @@
-use std::{fs::File, path::PathBuf, io::{BufReader, BufWriter}};
+use std::{fs::{File, self}, path::PathBuf, io::{BufReader, BufWriter}};
 use serde::{Serialize, Deserialize};
 use serde_json;
 
@@ -14,7 +14,12 @@ pub struct Store {
 
 impl Store {
     fn get_file_path() -> Option<PathBuf> {
-        return Some(PathBuf::from_iter([dirs::home_dir()?.to_str()?, "se-commands.json"]));
+        let mut path = dirs::config_dir()?.to_owned();
+
+        path.push("se");
+        path.push("commands.json");
+
+        return Some(path);
     }
 
     pub fn new() -> Self {
@@ -35,7 +40,12 @@ impl Store {
     }
 
     pub fn save_commands(&self, commands: &Vec<CommandInfo>) -> Result<(), String> {
-        let path = self.store_path.clone().ok_or::<String>("Failed to get save file path.".into())?;
+        let path = self.store_path.as_ref().ok_or::<String>("Failed to get save file path.".into())?;
+
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).map_err(|_| "Filed to open or create save directory.".to_owned())?;
+        }
+
         let file = File::create(path).map_err(|_| "Failed to open save file.".to_owned())?;
         let writer = BufWriter::new(file);
         
