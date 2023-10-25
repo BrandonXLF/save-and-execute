@@ -1,5 +1,5 @@
 <div align="center">
-<img  src="images/icon.png" alt="se" style="max-width: 140px;">
+<img  src="images/icon.png" alt="se" width="140">
 </div>
 
 # se – Save and Execute
@@ -10,7 +10,7 @@ To use it you can either execute `se <action>` for each action you want to perfo
 
 ## Preview
 
-<img  src="images/preview.gif" alt="se" style="max-width: 400px;">
+<img  src="images/preview.gif" alt="se" width="400">
 
 ## Usage
 
