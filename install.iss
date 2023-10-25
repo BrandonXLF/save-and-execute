@@ -1,6 +1,6 @@
 ﻿[Setup]
 AppName = se – Save and Execute
-AppVersion = 0.1.0
+AppVersion = 0.2.0
 DefaultDirName = {autopf}\se
 OutputBaseFilename = se Installer
 PrivilegesRequiredOverridesAllowed = Dialog
