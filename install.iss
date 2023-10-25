@@ -1,6 +1,7 @@
-[Setup]
+﻿[Setup]
 AppName = se – Save and Execute
 AppId = 776e5cde-9e09-4c5a-8514-5a8ce23e559c
+AppVersion = 0.2.1
 DefaultDirName = {autopf}\se
 OutputBaseFilename = se Installer
 PrivilegesRequiredOverridesAllowed = Dialog
@@ -62,10 +63,10 @@ Type: dirifempty; Name: {localappdata}\Microsoft\Windows Terminal\Fragments\se
 
 [Code]
 function PathNeeded(UseSystem: Boolean; Key: String): Boolean;
-	var
+var
 	Root: Integer;
-		Path: String;
-	begin
+	Path: String;
+begin
     if UseSystem then begin
 		Root := HKEY_LOCAL_MACHINE;
     end else begin
@@ -105,17 +106,17 @@ procedure WriteTerminalFragment();
 var
 	JSONPath, AppPath: String;
 	Fragment: array of String;
-	begin
-		if IsAdminInstallMode() then begin
-			JSONPath := ExpandConstant('{commonappdata}\Microsoft\Windows Terminal\Fragments\se\se.json')
-		end
-		else begin
-			JSONPath := ExpandConstant('{localappdata}\Microsoft\Windows Terminal\Fragments\se\se.json')
-		end;		 
+begin
+	if IsAdminInstallMode() then begin
+		JSONPath := ExpandConstant('{commonappdata}\Microsoft\Windows Terminal\Fragments\se\se.json')
+	end
+	else begin
+		JSONPath := ExpandConstant('{localappdata}\Microsoft\Windows Terminal\Fragments\se\se.json')
+	end;		 
 
 	AppPath := ExpandConstant('{app}');;
 	StringChangeEx(AppPath, '\', '\\', True);
-
+	
 	Fragment := ['{"profiles":[{"name":"se – Save and Execute","commandline":"', AppPath, '\\bin\\se.exe","icon":"', AppPath, '\\icon.ico"}]}'];
 	SaveStringsToUTF8File(JSONPath, Fragment, False);
 end;
