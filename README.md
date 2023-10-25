@@ -35,6 +35,6 @@ The Windows installer offers integration into the Windows Terminal and the syste
 
 ## Developing
 
-`se` is built using Cargo and Rust. Once those are installed run `cargo install` to install dependencies and `cargo run` to run the app. See Cargo for more options.
+`se` is built using Cargo and Rust. Once those are installed run `cargo run` to run the app and `cargo build --release` to build a release version. See Cargo for more options.
 
 The Windows installer is built from `install.iss` with Inno Setup.
