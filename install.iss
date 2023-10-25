@@ -1,14 +1,14 @@
-[Setup]
-AppName = se (Save and Execute)
-AppVersion = 1.2.0
+﻿[Setup]
+AppName = se – Save and Execute
+AppVersion = 0.1.0
 DefaultDirName = {autopf}\se
-OutputBaseFilename = se (Save and Execute) Installer
+OutputBaseFilename = se Installer
 PrivilegesRequiredOverridesAllowed = Dialog
 ArchitecturesInstallIn64BitMode = x64
 DefaultGroupName = se
 SetupIconFile = images\icon.ico
 WizardSmallImageFile = images\wizard-small.bmp
-UninstallDisplayName = Save and Execute
+UninstallDisplayName = se – Save and Execute
 UninstallDisplayIcon = {app}\bin\se.exe,0
 ChangesEnvironment = yes
 OutputDir = target\release
@@ -37,9 +37,9 @@ Name: "{commonappdata}\Microsoft\Windows Terminal\Fragments\se"; Components: ter
 Name: "{localappdata}\Microsoft\Windows Terminal\Fragments\se"; Components: terminal; Check: not IsAdminLoggedOn
 
 [Icons]
-Name: "{commondesktop}\se (Save and Execute)"; Filename: "{app}\bin\se.exe"; Components: desktop; Check: IsAdminLoggedOn
-Name: "{userdesktop}\se (Save and Execute)"; Filename: "{app}\bin\se.exe"; Components: desktop; Check: not IsAdminLoggedOn
-Name: "{group}\se (Save and Execute)"; Filename: "{app}\bin\se.exe"; Components: start;
+Name: "{commondesktop}\se – Save and Execute"; Filename: "{app}\bin\se.exe"; Components: desktop; Check: IsAdminLoggedOn
+Name: "{userdesktop}\se – Save and Execute"; Filename: "{app}\bin\se.exe"; Components: desktop; Check: not IsAdminLoggedOn
+Name: "{group}\se – Save and Execute"; Filename: "{app}\bin\se.exe"; Components: start;
 
 [Registry]
 Root: HKCU; Subkey: "Environment"; \
@@ -51,7 +51,7 @@ Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environmen
 	Check: IsAdminLoggedOn and PathNeeded(true, 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment')
 
 [Run]
-Filename: "{app}\bin\se.exe"; Description: "Launch Save and Execute"; Flags: postinstall
+Filename: "{app}\bin\se.exe"; Description: "Launch se – Save and Execute"; Flags: postinstall
 
 [UninstallDelete]
 // File must be deleted first, so Dirs entry does not delete folder
@@ -124,7 +124,7 @@ procedure CurStepChanged(CurStep:TSetupStep);
 
 		SaveStringToFile(
 			JSONPath,
-			'{"profiles":[{"guid":"{ef539101-ae4c-5f93-91a7-967fe62af1ee}","name":"se (Save and Execute)","commandline":"' + AppPathEsc + '\\bin\\se.exe","icon":"' + AppPathEsc + '\\icon.ico"}]}',
+			'{"profiles":[{"name":"se – Save and Execute","commandline":"' + AppPathEsc + '\\bin\\se.exe","icon":"' + AppPathEsc + '\\icon.ico"}]}',
 			False
 		);
 	end;
