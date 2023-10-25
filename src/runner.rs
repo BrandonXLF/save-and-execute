@@ -147,7 +147,7 @@ impl Runner {
 
     fn prompt_with_initial(&self, prompt: &str, initial: &str) -> String {
         let mut editor = self.editor.borrow_mut();
-        let input = self.editor.borrow_mut().readline_with_initial(prompt, (initial, "")).unwrap();
+        let input = editor.readline_with_initial(prompt, (initial, "")).unwrap();
         let _ = editor.add_history_entry(&input);
 
         return input;
