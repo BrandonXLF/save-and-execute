@@ -101,15 +101,11 @@ begin
     RegWriteStringValue(Root, Key, 'Path', Path)
 end;
 
-procedure CurStepChanged(CurStep:TSetupStep);
-	var JSONPath, AppPath, AppPathEsc: String;
+procedure WriteTerminalFragment();
+var
+	JSONPath, AppPath: String;
+	Fragment: array of String;
 	begin
-
-	if CurStep<>ssPostInstall then Exit;
-	
-	AppPath := ExpandConstant('{app}');
-
-	if IsComponentSelected('terminal') then begin
 		if IsAdminInstallMode() then begin
 			JSONPath := ExpandConstant('{commonappdata}\Microsoft\Windows Terminal\Fragments\se\se.json')
 		end
@@ -117,15 +113,19 @@ procedure CurStepChanged(CurStep:TSetupStep);
 			JSONPath := ExpandConstant('{localappdata}\Microsoft\Windows Terminal\Fragments\se\se.json')
 		end;		 
 
-		AppPathEsc := AppPath;
-		StringChangeEx(AppPathEsc, '\', '\\', True);
+	AppPath := ExpandConstant('{app}');;
+	StringChangeEx(AppPath, '\', '\\', True);
 
-		SaveStringToFile(
-			JSONPath,
-			'{"profiles":[{"name":"se – Save and Execute","commandline":"' + AppPathEsc + '\\bin\\se.exe","icon":"' + AppPathEsc + '\\icon.ico"}]}',
-			False
-		);
-	end;
+	Fragment := ['{"profiles":[{"name":"se – Save and Execute","commandline":"', AppPath, '\\bin\\se.exe","icon":"', AppPath, '\\icon.ico"}]}'];
+	SaveStringsToUTF8File(JSONPath, Fragment, False);
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+	if CurStep<>ssPostInstall then Exit;
+
+
+	if IsComponentSelected('terminal') then WriteTerminalFragment;
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
