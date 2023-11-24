@@ -1,7 +1,7 @@
 ﻿[Setup]
 AppName = se – Save and Execute
 AppId = 776e5cde-9e09-4c5a-8514-5a8ce23e559c
-AppVersion = 0.2.1
+AppVersion = 0.2.2
 DefaultDirName = {autopf}\se
 OutputBaseFilename = se Installer
 PrivilegesRequiredOverridesAllowed = Dialog
