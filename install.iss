@@ -104,8 +104,7 @@ end;
 
 procedure WriteTerminalFragment();
 var
-	JSONPath, AppPath: String;
-	Fragment: array of String;
+	JSONPath, AppPath, Fragment: String;
 begin
 	if IsAdminInstallMode() then begin
 		JSONPath := ExpandConstant('{commonappdata}\Microsoft\Windows Terminal\Fragments\se\se.json')
@@ -117,8 +116,8 @@ begin
 	AppPath := ExpandConstant('{app}');;
 	StringChangeEx(AppPath, '\', '\\', True);
 	
-	Fragment := ['{"profiles":[{"name":"se – Save and Execute","commandline":"', AppPath, '\\bin\\se.exe","icon":"', AppPath, '\\icon.ico"}]}'];
-	SaveStringsToUTF8File(JSONPath, Fragment, False);
+	Fragment := '{"profiles":[{"name":"se – Save and Execute","commandline":"' + AppPath + '\\bin\\se.exe","icon":"' + AppPath + '\\icon.ico"}]}';
+	SaveStringsToUTF8File(JSONPath, [Fragment], False);
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
