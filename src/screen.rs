@@ -19,7 +19,8 @@ pub fn show_help(ui: bool) {
     -h, help   Show this help message. <identifier> is ignored.
     -l, list   Show the command list. This is the default action when no <identifier> is given. <identifier> is ignored.
     -m, move   Move the specified command to a new position on the command list.
-    -r, run    Run the specified command. This is the default action when only a <identifier> is given.");
+    -r, run    Run the specified command. This is the default action when only a <identifier> is given.
+               Arguments passed will replace %0, %1, %2, etc. with %0 being the command's name.");
 
     if ui {
         println!("        exit   Exit this command line.")

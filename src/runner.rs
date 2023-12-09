@@ -4,7 +4,7 @@ use crate::{arg_parser, store::{Store, CommandInfo}, screen};
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
 
-type Action = fn(&mut Runner, &str, bool) -> Result<(), String>;
+type Action = fn(&mut Runner, &Vec<String>, bool) -> Result<(), String>;
 
 pub struct Runner {
     actions: HashMap<&'static str, Action>,
@@ -17,9 +17,9 @@ pub struct Runner {
 impl Runner {
     pub fn new() -> Self {
         let actions: HashMap<&str, Action> = HashMap::from([
-            ("add", |runner, name, _| -> Result<(), String> {
+            ("add", |runner, args, _| -> Result<(), String> {
                 runner.commands.push(runner.create_cmd(
-                    &CommandInfo { name: name.to_owned(), cmd: "".to_owned() },
+                    &CommandInfo { name: args.first().map(|arg| arg.to_owned()).unwrap_or("".to_owned()), cmd: "".to_owned() },
                     false
                 )?);
                 runner.save_commands()?;
@@ -28,8 +28,8 @@ impl Runner {
 
                 return Ok(());
             } as Action),
-            ("del", |runner, identifier, ui| -> Result<(), String> {
-                let index = runner.get_command_index(identifier, ui)?;
+            ("del", |runner, args, ui| -> Result<(), String> {
+                let index = runner.get_command_index(args, ui)?;
 
                 println!();
                 let confirm = runner.prompt(
@@ -47,8 +47,8 @@ impl Runner {
 
                 return Ok(());
             } as Action),
-            ("edit", |runner, identifier, ui| -> Result<(), String> {
-                let index: usize = runner.get_command_index(identifier, ui)?;
+            ("edit", |runner, args, ui| -> Result<(), String> {
+                let index: usize = runner.get_command_index(args, ui)?;
             
                 runner.commands[index] = runner.create_cmd(&runner.commands[index], true)?;
                 runner.save_commands()?;
@@ -57,8 +57,8 @@ impl Runner {
 
                 return Ok(());
             } as Action),
-            ("move", |runner, identifier, ui| -> Result<(), String> {
-                let index = runner.get_command_index(identifier, ui)?;
+            ("move", |runner, args, ui| -> Result<(), String> {
+                let index = runner.get_command_index(args, ui)?;
 
                 println!();
                 let pos_line = runner.prompt("New position: ");
@@ -77,15 +77,21 @@ impl Runner {
 
                 return Ok(());
             } as Action), 
-            ("run", |runner, identifier, ui| -> Result<(), String> {
-                let cmd_info = &runner.commands[runner.get_command_index(identifier, ui)?];
+            ("run", |runner, args, ui| -> Result<(), String> {
+                let cmd_info = &runner.commands[runner.get_command_index(args, ui)?];
+                let mut cmd = cmd_info.cmd.to_owned();
+
+                for (i, arg) in args.iter().enumerate() {
+                    let find = "%".to_owned() + &i.to_string();
+                    cmd = cmd.replace(&find, arg);
+                }
                 
-                println!("\nRunning command: {}\n", cmd_info.cmd);
+                println!("\nRunning command: {}\n", cmd);
 
                 #[cfg(target_os = "windows")]
-                let status = Command::new("cmd").arg("/c").raw_arg(&cmd_info.cmd).status().map_err(|_| "Failed to run cmd.")?;
+                let status = Command::new("cmd").arg("/c").raw_arg(&cmd).status().map_err(|_| "Failed to run cmd.")?;
                 #[cfg(not(target_os = "windows"))]
-                let status = Command::new("sh").arg("-c").arg(&cmd_info.cmd).status().map_err(|_| "Failed to run sh.")?;
+                let status = Command::new("sh").arg("-c").arg(&cmd).status().map_err(|_| "Failed to run sh.")?;
             
                 println!(
                     "\nCommand exited with status code {}.",
@@ -168,18 +174,21 @@ impl Runner {
         self.store.save_commands(&self.commands)
     }
 
-    fn get_command_index(&self, line: &str, ui: bool) -> Result<usize, String>  {
-        if line.len() == 0 {
+    fn get_command_index(&self, args: &Vec<String>, ui: bool) -> Result<usize, String>  {
+        let maybe_line = args.first();
+
+        if maybe_line.is_none() || maybe_line.is_some_and(|line| line.len() == 0) {
             return Err("No command specified for action.".into());
         }
-    
+
+        let line = maybe_line.unwrap();
         let help_cmd = if ui { "help" } else { "se help" };
         let maybe_number: Option<usize> = line.parse::<usize>().ok();
 
         let index = if let Some(number) = maybe_number {
             number - 1
         } else {
-            self.commands.iter().position(|command| command.name == line)
+            self.commands.iter().position(|command| &command.name == line)
                 .ok_or(format!("Command with name \"{}\" not found. Run \"{}\" for help.", line, help_cmd))?
         };
     
@@ -202,31 +211,20 @@ impl Runner {
     fn exec_from_args(&mut self, args: &Vec<String>, ui: bool) -> Result<(), String> {
         let arg_count = args.len();
 
-        if arg_count > 2 {
-            return Err("Too many arguments.".into());
-        }
-
         if arg_count == 0 || args[0].is_empty() {
             return Err("No action or identifier given!".into());
         }
 
         let mut action: Option<&Action> = self.get_action(&args[0]);
-        let identifier: &str;
 
-        if arg_count == 2 && action.is_none() {
-            return Err(format!("Unknown action \"{}\".", &args[0]));
-        }
-
-        if arg_count == 2 {
-            identifier = &args[1];
-        } else if action.is_none() {
+        let extra_args = if action.is_none() {
             action = self.get_action("run");
-            identifier = &args[0];
+            args.to_owned()
         } else {
-            identifier = "";
-        }
+            args.iter().skip(1).map(|arg| arg.to_owned()).collect()
+        };
 
-        return action.unwrap()(self, identifier, ui);
+        return action.unwrap()(self, &extra_args, ui);
     }
 
     fn process_args(&mut self, args: &Vec<String>, ui: bool) {
