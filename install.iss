@@ -1,9 +1,10 @@
 ﻿[Setup]
 AppName = se – Save and Execute
 AppId = 776e5cde-9e09-4c5a-8514-5a8ce23e559c
-AppVersion = 0.2.2
+AppVersion = 0.3.0
 DefaultDirName = {autopf}\se
-OutputBaseFilename = se Installer
+OutputBaseFilename = se-installer
+PrivilegesRequired = lowest
 PrivilegesRequiredOverridesAllowed = Dialog
 ArchitecturesInstallIn64BitMode = x64
 DefaultGroupName = se
@@ -34,22 +35,22 @@ Source: "images\icon.ico"; DestDir: "{app}"
 
 [Dirs]
 Name: "{app}\bin"
-Name: "{commonappdata}\Microsoft\Windows Terminal\Fragments\se"; Components: terminal; Check: IsAdminLoggedOn
-Name: "{localappdata}\Microsoft\Windows Terminal\Fragments\se"; Components: terminal; Check: not IsAdminLoggedOn
+Name: "{commonappdata}\Microsoft\Windows Terminal\Fragments\se"; Components: terminal; Check: IsAdminInstallMode()
+Name: "{localappdata}\Microsoft\Windows Terminal\Fragments\se"; Components: terminal; Check: not IsAdminInstallMode()
 
 [Icons]
-Name: "{commondesktop}\se – Save and Execute"; Filename: "{app}\bin\se.exe"; Components: desktop; Check: IsAdminLoggedOn
-Name: "{userdesktop}\se – Save and Execute"; Filename: "{app}\bin\se.exe"; Components: desktop; Check: not IsAdminLoggedOn
+Name: "{commondesktop}\se – Save and Execute"; Filename: "{app}\bin\se.exe"; Components: desktop; Check: IsAdminInstallMode()
+Name: "{userdesktop}\se – Save and Execute"; Filename: "{app}\bin\se.exe"; Components: desktop; Check: not IsAdminInstallMode()
 Name: "{group}\se – Save and Execute"; Filename: "{app}\bin\se.exe"; Components: start;
 
 [Registry]
 Root: HKCU; Subkey: "Environment"; \
 	ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"; Components: path; \
-	Check: not IsAdminLoggedOn and PathNeeded(false, 'Environment')
+	Check: not IsAdminInstallMode() and PathNeeded(false, 'Environment')
 
 Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; \
 	ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"; Components: path; \
-	Check: IsAdminLoggedOn and PathNeeded(true, 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment')
+	Check: IsAdminInstallMode() and PathNeeded(true, 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment')
 
 [Run]
 Filename: "{app}\bin\se.exe"; Description: "Launch se – Save and Execute"; Flags: postinstall
@@ -125,7 +126,7 @@ begin
 	if CurStep<>ssPostInstall then Exit;
 
 
-	if IsComponentSelected('terminal') then WriteTerminalFragment;
+	if WizardIsComponentSelected('terminal') then WriteTerminalFragment;
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
