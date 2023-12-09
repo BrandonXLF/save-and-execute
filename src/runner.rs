@@ -1,5 +1,5 @@
 use std::{collections::HashMap, process::Command, cell::RefCell};
-use rustyline::{DefaultEditor, config::Configurer, ColorMode};
+use rustyline::DefaultEditor;
 use crate::{arg_parser, store::{Store, CommandInfo}, screen};
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
@@ -128,13 +128,7 @@ impl Runner {
 
         let store = Store::new();
         let commands = store.get_commands();
-
-        let mut config_builder = rustyline::Config::builder();
-        // Workaround for https://github.com/kkawakam/rustyline/issues/738
-        // Line wrapping does not add line feed on Windows when color mode is enabled
-        config_builder.set_color_mode(ColorMode::Disabled);
-
-        let editor = DefaultEditor::with_config(config_builder.build()).unwrap();
+        let editor = DefaultEditor::new().unwrap();
 
         Self { actions, aliases, store, commands, editor: RefCell::new(editor) }
     }
