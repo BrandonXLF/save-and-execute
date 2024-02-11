@@ -26,6 +26,7 @@ usage: se <action> <identifier>
     -m, move   Move the specified command to a new position on the command list.
     -r, run    Run the specified command. This is the default action when only a <identifier> is given.
                Arguments passed will replace %0, %1, %2, etc. with %0 being the command's name.
+    -v, view   View the specified command.
 
 <identifier> is either the name of the command or the index of the command on the command list.
 ```

@@ -57,6 +57,16 @@ impl Runner {
 
                 return Ok(());
             } as Action),
+            ("view", |runner, args, ui| -> Result<(), String> {
+                let index: usize = runner.get_command_index(args, ui)?;
+                let cmd = &runner.commands[index];
+
+                println!();
+                println!("Name: {}", cmd.name);
+                println!("Command: {}", cmd.cmd);
+
+                return Ok(());
+            } as Action),
             ("move", |runner, args, ui| -> Result<(), String> {
                 let index = runner.get_command_index(args, ui)?;
 
