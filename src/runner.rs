@@ -1,8 +1,11 @@
-use std::{collections::HashMap, process::Command, cell::RefCell};
+use crate::{
+    arg_parser, screen,
+    store::{CommandInfo, Store},
+};
 use rustyline::DefaultEditor;
-use crate::{arg_parser, store::{Store, CommandInfo}, screen};
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
+use std::{cell::RefCell, collections::HashMap, process::Command};
 
 type Action = fn(&mut Runner, &Vec<String>, bool) -> Result<(), String>;
 
@@ -18,12 +21,20 @@ impl Runner {
     pub fn new() -> Self {
         let actions: HashMap<&str, Action> = HashMap::from([
             ("add", |runner, args, _| -> Result<(), String> {
-                runner.commands.push(runner.create_cmd(
-                    &CommandInfo { name: args.first().map(|arg| arg.to_owned()).unwrap_or("".to_owned()), cmd: "".to_owned() },
-                    false
-                )?);
+                runner.commands.push(
+                    runner.create_cmd(
+                        &CommandInfo {
+                            name: args
+                                .first()
+                                .map(|arg| arg.to_owned())
+                                .unwrap_or("".to_owned()),
+                            cmd: "".to_owned(),
+                        },
+                        false,
+                    )?,
+                );
                 runner.save_commands()?;
-        
+
                 println!("\nCommand created successfully.");
 
                 return Ok(());
@@ -32,27 +43,33 @@ impl Runner {
                 let index = runner.get_command_index(args, ui)?;
 
                 println!();
-                let confirm = runner.prompt(
-                    format!("Are you sure you want to delete command #{}? (Y/N) ", index + 1).as_str()
-                ).to_lowercase();
-        
+                let confirm = runner
+                    .prompt(
+                        format!(
+                            "Are you sure you want to delete command #{}? (Y/N) ",
+                            index + 1
+                        )
+                        .as_str(),
+                    )
+                    .to_lowercase();
+
                 if confirm != "y" && confirm != "yes" {
                     return Err("Deletion aborted.".into());
                 }
-                
+
                 runner.commands.remove(index);
                 runner.save_commands()?;
-        
+
                 println!("\nCommand deleted successfully.");
 
                 return Ok(());
             } as Action),
             ("edit", |runner, args, ui| -> Result<(), String> {
                 let index: usize = runner.get_command_index(args, ui)?;
-            
+
                 runner.commands[index] = runner.create_cmd(&runner.commands[index], true)?;
                 runner.save_commands()?;
-        
+
                 println!("\nCommand edited successfully.");
 
                 return Ok(());
@@ -74,19 +91,19 @@ impl Runner {
                 let pos_line = runner.prompt("New position: ");
 
                 let mut new_index = pos_line.parse::<usize>().map_err(|_| "Invalid number.")? - 1;
-    
+
                 if new_index > runner.commands.len() {
                     new_index = runner.commands.len();
                 }
-    
+
                 let cmd = runner.commands.remove(index);
                 runner.commands.insert(new_index, cmd);
                 runner.save_commands()?;
-    
+
                 println!("\nCommand moved successfully.");
 
                 return Ok(());
-            } as Action), 
+            } as Action),
             ("run", |runner, args, ui| -> Result<(), String> {
                 let cmd_info = &runner.commands[runner.get_command_index(args, ui)?];
                 let mut cmd = cmd_info.cmd.to_owned();
@@ -95,24 +112,35 @@ impl Runner {
                     let find = "%".to_owned() + &i.to_string();
                     cmd = cmd.replace(&find, arg);
                 }
-                
+
                 println!("\nRunning command: {}\n", cmd);
 
                 #[cfg(target_os = "windows")]
-                let status = Command::new("cmd").arg("/c").raw_arg(&cmd).status().map_err(|_| "Failed to run cmd.")?;
+                let status = Command::new("cmd")
+                    .arg("/c")
+                    .raw_arg(&cmd)
+                    .status()
+                    .map_err(|_| "Failed to run cmd.")?;
                 #[cfg(not(target_os = "windows"))]
-                let status = Command::new("sh").arg("-c").arg(&cmd).status().map_err(|_| "Failed to run sh.")?;
-            
+                let status = Command::new("sh")
+                    .arg("-c")
+                    .arg(&cmd)
+                    .status()
+                    .map_err(|_| "Failed to run sh.")?;
+
                 println!(
                     "\nCommand exited with status code {}.",
-                    status.code().map(|code| code.to_string()).unwrap_or("N/A".into())
+                    status
+                        .code()
+                        .map(|code| code.to_string())
+                        .unwrap_or("N/A".into())
                 );
 
                 return Ok(());
             } as Action),
             ("help", |_, _, ui| -> Result<(), String> {
                 screen::show_help(ui);
-                
+
                 return Ok(());
             } as Action),
             ("list", |runner, _, ui| -> Result<(), String> {
@@ -121,7 +149,7 @@ impl Runner {
                 for (i, cmd_info) in runner.commands.iter().enumerate() {
                     println!("{}. {}", i + 1, arg_parser::escape_string(&cmd_info.name));
                 }
-        
+
                 if runner.commands.len() == 0 {
                     let add_cmd = if ui { "add" } else { "se add" };
 
@@ -131,7 +159,7 @@ impl Runner {
                 return Ok(());
             } as Action),
         ]);
-    
+
         let aliases: HashMap<&str, &str> = HashMap::from([
             ("-a", "add"),
             ("-d", "del"),
@@ -146,7 +174,13 @@ impl Runner {
         let commands = store.get_commands();
         let editor = DefaultEditor::new().unwrap();
 
-        Self { actions, aliases, store, commands, editor: RefCell::new(editor) }
+        Self {
+            actions,
+            aliases,
+            store,
+            commands,
+            editor: RefCell::new(editor),
+        }
     }
 
     fn prompt(&self, prompt: &str) -> String {
@@ -171,12 +205,12 @@ impl Runner {
         let name = self.prompt_with_initial("Name: ", &base.name);
         let cmd = self.prompt_with_initial("Command: ", &base.cmd);
 
-        if (!name_reserved || base.name.is_empty() || base.name != name) &&
-            self.commands.iter().any(|command| command.name == name)
+        if (!name_reserved || base.name.is_empty() || base.name != name)
+            && self.commands.iter().any(|command| command.name == name)
         {
             return Err(format!("Command with name \"{}\" already exists.", name));
         }
-    
+
         Ok(CommandInfo { name, cmd })
     }
 
@@ -184,7 +218,7 @@ impl Runner {
         self.store.save_commands(&self.commands)
     }
 
-    fn get_command_index(&self, args: &Vec<String>, ui: bool) -> Result<usize, String>  {
+    fn get_command_index(&self, args: &Vec<String>, ui: bool) -> Result<usize, String> {
         let maybe_line = args.first();
 
         if maybe_line.is_none() || maybe_line.is_some_and(|line| line.len() == 0) {
@@ -198,21 +232,29 @@ impl Runner {
         let index = if let Some(number) = maybe_number {
             number - 1
         } else {
-            self.commands.iter().position(|command| &command.name == line)
-                .ok_or(format!("Command with name \"{}\" not found. Run \"{}\" for help.", line, help_cmd))?
+            self.commands
+                .iter()
+                .position(|command| &command.name == line)
+                .ok_or(format!(
+                    "Command with name \"{}\" not found. Run \"{}\" for help.",
+                    line, help_cmd
+                ))?
         };
-    
+
         if index >= self.commands.len() {
-            return Err(format!("Command #{} does not exist. Run \"{}\" for help.", line, help_cmd));
+            return Err(format!(
+                "Command #{} does not exist. Run \"{}\" for help.",
+                line, help_cmd
+            ));
         }
-    
+
         Ok(index)
     }
 
     fn get_action(&mut self, action: &str) -> Option<&Action> {
         let resolved_action = match self.aliases.get(action) {
             Some(target_action) => target_action,
-            _ => action
+            _ => action,
         };
 
         return self.actions.get(resolved_action);

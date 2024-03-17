@@ -1,9 +1,9 @@
 mod arg_parser;
 mod runner;
-mod store;
 mod screen;
-use std::env;
+mod store;
 use runner::Runner;
+use std::env;
 
 fn main() {
     let all_args: Vec<String> = env::args().collect();

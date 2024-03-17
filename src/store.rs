@@ -1,15 +1,19 @@
-use std::{fs::{File, self}, path::PathBuf, io::{BufReader, BufWriter}};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json;
+use std::{
+    fs::{self, File},
+    io::{BufReader, BufWriter},
+    path::PathBuf,
+};
 
 #[derive(Serialize, Deserialize)]
 pub struct CommandInfo {
     pub name: String,
-    pub cmd: String
+    pub cmd: String,
 }
 
 pub struct Store {
-    store_path: Option<PathBuf>
+    store_path: Option<PathBuf>,
 }
 
 impl Store {
@@ -24,7 +28,7 @@ impl Store {
 
     pub fn new() -> Self {
         Self {
-            store_path: Self::get_file_path()
+            store_path: Self::get_file_path(),
         }
     }
 
@@ -40,17 +44,22 @@ impl Store {
     }
 
     pub fn save_commands(&self, commands: &Vec<CommandInfo>) -> Result<(), String> {
-        let path = self.store_path.as_ref().ok_or::<String>("Failed to get save file path.".into())?;
+        let path = self
+            .store_path
+            .as_ref()
+            .ok_or::<String>("Failed to get save file path.".into())?;
 
         if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent).map_err(|_| "Filed to open or create save directory.".to_owned())?;
+            fs::create_dir_all(parent)
+                .map_err(|_| "Filed to open or create save directory.".to_owned())?;
         }
 
         let file = File::create(path).map_err(|_| "Failed to open save file.".to_owned())?;
         let writer = BufWriter::new(file);
-        
-        serde_json::to_writer(writer, &commands).map_err(|_| "Failed to write commands to save file.".to_owned())?;
-        
+
+        serde_json::to_writer(writer, &commands)
+            .map_err(|_| "Failed to write commands to save file.".to_owned())?;
+
         Ok(())
     }
 }

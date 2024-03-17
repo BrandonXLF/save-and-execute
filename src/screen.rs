@@ -1,5 +1,8 @@
 pub fn title() {
-    println!("Save and Execute v{} (c) Brandon Fowler", env!("CARGO_PKG_VERSION"));
+    println!(
+        "Save and Execute v{} (c) Brandon Fowler",
+        env!("CARGO_PKG_VERSION")
+    );
 }
 
 pub fn show_help(ui: bool) {
@@ -27,6 +30,8 @@ pub fn show_help(ui: bool) {
         println!("        exit   Exit this command line.")
     }
 
-    println!("
-<identifier> is either the name of the command or the index of the command on the command list.");
+    println!(
+        "
+<identifier> is either the name of the command or the index of the command on the command list."
+    );
 }

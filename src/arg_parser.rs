@@ -9,9 +9,13 @@ pub fn string_to_arguments(str: &str) -> Vec<String> {
         match char {
             '\\' => {
                 slashes += 1;
-            },
+            }
             '"' => {
-                arg.push_str(&std::iter::repeat('\\').take(slashes / 2).collect::<String>());
+                arg.push_str(
+                    &std::iter::repeat('\\')
+                        .take(slashes / 2)
+                        .collect::<String>(),
+                );
 
                 if slashes % 2 == 1 {
                     arg.push(char);
@@ -20,7 +24,7 @@ pub fn string_to_arguments(str: &str) -> Vec<String> {
                 }
 
                 slashes = 0;
-            },
+            }
             ' ' => {
                 arg.push_str(&std::iter::repeat('\\').take(slashes).collect::<String>());
                 slashes = 0;
@@ -30,7 +34,7 @@ pub fn string_to_arguments(str: &str) -> Vec<String> {
                 } else {
                     args.push("".into());
                 }
-            },
+            }
             _ => {
                 arg.push_str(&std::iter::repeat('\\').take(slashes).collect::<String>());
                 slashes = 0;
@@ -40,14 +44,16 @@ pub fn string_to_arguments(str: &str) -> Vec<String> {
         }
     }
 
-    args.last_mut().unwrap().push_str(&std::iter::repeat('\\').take(slashes).collect::<String>());
+    args.last_mut()
+        .unwrap()
+        .push_str(&std::iter::repeat('\\').take(slashes).collect::<String>());
 
     return args;
 }
 
 pub fn escape_string(str: &str) -> String {
     let has_spaces = str.contains(' ');
-    let min_len = if has_spaces { str.len() + 2 } else { str.len()};
+    let min_len = if has_spaces { str.len() + 2 } else { str.len() };
 
     let mut escaped_str: String = String::with_capacity(min_len);
     let mut slashes = 0;
@@ -60,14 +66,18 @@ pub fn escape_string(str: &str) -> String {
         match char {
             '\\' => {
                 slashes += 1;
-            },
+            }
             '"' => {
-                escaped_str.push_str(&std::iter::repeat('\\').take(slashes * 2).collect::<String>());
+                escaped_str.push_str(
+                    &std::iter::repeat('\\')
+                        .take(slashes * 2)
+                        .collect::<String>(),
+                );
                 slashes = 0;
 
                 escaped_str.push('\\');
                 escaped_str.push('\"');
-            },
+            }
             _ => {
                 escaped_str.push_str(&std::iter::repeat('\\').take(slashes).collect::<String>());
                 slashes = 0;
@@ -78,7 +88,11 @@ pub fn escape_string(str: &str) -> String {
     }
 
     if has_spaces {
-        escaped_str.push_str(&std::iter::repeat('\\').take(slashes * 2).collect::<String>());
+        escaped_str.push_str(
+            &std::iter::repeat('\\')
+                .take(slashes * 2)
+                .collect::<String>(),
+        );
         escaped_str.push('"');
     } else {
         escaped_str.push_str(&std::iter::repeat('\\').take(slashes).collect::<String>());
