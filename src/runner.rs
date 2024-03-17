@@ -3,9 +3,8 @@ use crate::{
     store::{CommandInfo, Store},
 };
 use rustyline::DefaultEditor;
-#[cfg(target_os = "windows")]
-use std::os::windows::process::CommandExt;
-use std::{cell::RefCell, collections::HashMap, process::Command};
+use std::{cell::RefCell, collections::HashMap};
+use system::system;
 
 type Action = fn(&mut Runner, &Vec<String>, bool) -> Result<(), String>;
 
@@ -115,18 +114,7 @@ impl Runner {
 
                 println!("\nRunning command: {}\n", cmd);
 
-                #[cfg(target_os = "windows")]
-                let status = Command::new("cmd")
-                    .arg("/c")
-                    .raw_arg(&cmd)
-                    .status()
-                    .map_err(|_| "Failed to run cmd.")?;
-                #[cfg(not(target_os = "windows"))]
-                let status = Command::new("sh")
-                    .arg("-c")
-                    .arg(&cmd)
-                    .status()
-                    .map_err(|_| "Failed to run sh.")?;
+                let status = system(&cmd).map_err(|_| "Failed to run command.")?;
 
                 println!(
                     "\nCommand exited with status code {}.",
